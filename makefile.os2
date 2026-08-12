@@ -1,0 +1,51 @@
+# makefile.os2 - GCC/EMX makefile for SdlZombies under ArcaOS
+#
+# Requires SDL2, SDL2_image, SDL2_mixer from ANPM/RPM.
+# Usage: make -f makefile.os2
+#        make -f makefile.os2 clean
+
+CC      = gcc
+
+# os2fix.h neutralizes legacy OS/2 memory-model keywords (_far, _near, _huge,
+# _FAR_).  The errno.h conflict is handled by src/errno.h: "-I src" (listed
+# before the SDL2 system paths) causes every "#include <errno.h>" to resolve
+# to our shadow header, which has proper include guards and skips the
+# conflicting variable declaration when errno is already a macro.
+# SDL2_mixer is required for sound (Mix_OpenAudio, Mix_LoadWAV, etc.).
+OS2FIX = -include src/os2fix.h
+
+CFLAGS  = -Wall -O2 -Zomf -Zhigh-mem \
+          -I $(SRCDIR) \
+          $(shell sdl2-config --cflags) \
+          $(OS2FIX) \
+          -DSRC_DIR=\"\"
+
+LDFLAGS = -Zomf -Zhigh-mem -Zmap -Zstack 0x10000
+LIBS    = C:/usr/lib/SDL2main.a $(shell sdl2-config --libs) -lSDL2_image C:/usr/lib/SDL2_mixer_dll.a
+
+SRCDIR  = src
+OBJS    = $(SRCDIR)/main.o    \
+          $(SRCDIR)/sdl_util.o \
+          $(SRCDIR)/global.o   \
+          $(SRCDIR)/game.o     \
+          $(SRCDIR)/menu.o     \
+          $(SRCDIR)/option.o   \
+          $(SRCDIR)/f_option.o \
+          $(SRCDIR)/draw_text.o \
+          $(SRCDIR)/level.o    \
+          $(SRCDIR)/penguin.o  \
+          $(SRCDIR)/zombies.o  \
+          $(SRCDIR)/hole.o
+
+TARGET  = sdlzomb.exe
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+$(SRCDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -f $(SRCDIR)/*.o $(SRCDIR)/*.map $(TARGET) $(TARGET:.exe=.map)

@@ -20,7 +20,7 @@
 #define __PINGUS_H
 
 
-#include <SDL.h>
+#include "sdl_util.h"
 #include "hole.h"
 #include "zombies.h"
 

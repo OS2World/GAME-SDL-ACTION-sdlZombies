@@ -20,7 +20,7 @@
 #ifndef __OPTION_H
 #define __OPTION_H
 
-#include <SDL.h>
+#include "sdl_util.h"
 
 typedef struct
 {

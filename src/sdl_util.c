@@ -1,373 +1,279 @@
 /***************************************************************************
                         SdlZombies - Simple zombies game
-                             -------------------
-    begin                : Sun Apr 15 16:55:07 CEST 2001
-    copyright            : (C) 2001 by Philippe Brochard
-    email                : hocwp@free.fr
  ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
-
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <time.h>
 #include "sdl_util.h"
 #include "global.h"
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
+#ifndef VERSION
+#define VERSION "1.0.0"
 #endif
-
-
-
-
-/*===========================================================
- *		Initialisation et fermeture
- ============================================================*/
- 
-static Uint32 videoflags;
-static Uint8  video_bpp;
-
-
-/* This is a way of telling whether or not to use hardware surfaces */
-static Uint32 FastestFlags(Uint32 flags)
-{
-	const SDL_VideoInfo *info;
-
-	/* Hardware acceleration is only used in fullscreen mode */
-	flags |= SDL_FULLSCREEN;
-
-	/* Check for various video capabilities */
-	info = SDL_GetVideoInfo();
-	if ( info->blit_hw_CC && info->blit_fill ) {
-		/* We use accelerated colorkeying and color filling */
-		flags |= SDL_HWSURFACE;
-	}
-	/* If we have enough video memory, and will use accelerated
-	   blits directly to it, then use page flippeng.
-	 */
-	if ( (flags & SDL_HWSURFACE) == SDL_HWSURFACE ) {
-		/* Direct hardware blitting without double-buffering
-		   causes really bad flickering.
-		 */
-		if ( info->video_mem > MAXX*MAXY ) {
-			flags |= SDL_DOUBLEBUF;
-		} else {
-			flags &= ~SDL_HWSURFACE;
-		}
-	}
-
-	/* Return the flags */
-	return(flags);
-}
-
 
 
 static void Usage(char *name)
 {
-	fprintf(stderr, "SdlZombies %s\n", VERSION);
-	fprintf(stderr, "Usage: %s [Options]\n", name);
-
-	fprintf(stderr, "       --bpp value \t set color depth (value=8,16,24,32)\n");
-	fprintf(stderr, "  -hw, --hardware \t enable hardware surface\n");
-	fprintf(stderr, "       --flip \t\t enable double buffer\n");
-	fprintf(stderr, "       --fast \t\t enable fast blitting\n");
-	fprintf(stderr, "  -f,  --fullscreen \t enable fullscreen\n");
-	fprintf(stderr, "  -w,  --window \t enable window\n");
-	fprintf(stderr, "  -ns, --nosound \t disable sounds\n");
-	fprintf(stderr, "  -s,  --sound \t enable sounds\n");
-	exit(1);
+    fprintf(stderr, "SdlZombies %s\n", VERSION);
+    fprintf(stderr, "Usage: %s [Options]\n", name);
+    fprintf(stderr, "  -f,  --fullscreen \t enable fullscreen\n");
+    fprintf(stderr, "  -w,  --window \t enable window\n");
+    fprintf(stderr, "  -ns, --nosound \t disable sounds\n");
+    fprintf(stderr, "  -s,  --sound \t\t enable sounds\n");
+    exit(1);
 }
 
 
-SDL_Surface * Sdl_Init(int argc, char ** argv)
+SdlScreen_t* Sdl_Init(int argc, char **argv)
 {
-	SDL_Surface * screen;
+    SdlScreen_t *screen;
+    Uint32 win_flags = 0;
 
-	/* initialisation de SDL */
-	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) 
-	{
-		fprintf(stderr, "Couldn't initialize SDL: %s\n",SDL_GetError());
-		exit(1);
-	}
-	atexit(SDL_Quit);
-	
-	/* Test des arguments */
-	videoflags = SDL_SWSURFACE|SDL_ANYFORMAT;
-	video_bpp = 8;
-	while ( argc > 1 ) {
-		--argc;
-		if ( strcmp(argv[argc-1], "--bpp") == 0 ) {
-			video_bpp = atoi(argv[argc]);
-			printf("* Set bpp = %d\n", video_bpp);
-			videoflags &= ~SDL_ANYFORMAT;
-			--argc;
-		} else
-		if ( strcmp(argv[argc], "--fast") == 0 ) {
-			printf("* Enable fast\n");
-			videoflags = FastestFlags(videoflags);
-		} else
-		if ( strcmp(argv[argc], "-hw") == 0 || 
-				strcmp(argv[argc], "--hardware") == 0 ) {
-			printf("* Enable harware surface\n");
-			videoflags ^= SDL_HWSURFACE;
-		} else
-		if ( strcmp(argv[argc], "--flip") == 0 ) {
-			printf("* Enable double buffer\n");
-			videoflags ^= SDL_DOUBLEBUF;
-		} else
-		if ( strcmp(argv[argc], "--nosound") == 0 ||
-				strcmp(argv[argc], "-ns") == 0 ) {
-			printf("* Disable sound\n");
-			use_sound = 0;
-		} else
-		if ( strcmp(argv[argc], "--sound") == 0 ||
-				strcmp(argv[argc], "-s") == 0 ) {
-			printf("* Enable sound\n");
-			use_sound = 1;
-		} else
-		if ( strcmp(argv[argc], "-f") == 0 ||
-				strcmp(argv[argc], "--fullscreen") == 0 ) {
-			printf("* Enable fullscreen\n");
-			fullscreen = 1;
-		} else
-		if ( strcmp(argv[argc], "-w") == 0 ||
-				strcmp(argv[argc], "--window") == 0 ) {
-			printf("* Enable window\n");
-			fullscreen = 0;
-		} else {
-			Usage(argv[0]);
-		}
-	}
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        fprintf(stderr, "Couldn't initialize SDL: %s\n", SDL_GetError());
+        exit(1);
+    }
+    atexit(SDL_Quit);
 
-	if (fullscreen == 1) videoflags ^= SDL_FULLSCREEN;
-	
-	
-	/* Set MAXXxMAXY (640x480) video mode */
-	if ( (screen=SDL_SetVideoMode(MAXX,MAXY,video_bpp,videoflags)) == NULL ) 
-	{
-		fprintf(stderr, "Couldn't set %dx%d video mode: %s\n", 
-			MAXX, MAXY, SDL_GetError());
-		exit(2);
-	}
+    while (argc > 1) {
+        --argc;
+        if (strcmp(argv[argc], "--nosound") == 0 ||
+                strcmp(argv[argc], "-ns") == 0) {
+            printf("* Disable sound\n");
+        } else
+        if (strcmp(argv[argc], "--sound") == 0 ||
+                strcmp(argv[argc], "-s") == 0) {
+            printf("* Enable sound\n");
+        } else
+        if (strcmp(argv[argc], "-f") == 0 ||
+                strcmp(argv[argc], "--fullscreen") == 0) {
+            printf("* Enable fullscreen\n");
+            fullscreen = 1;
+        } else
+        if (strcmp(argv[argc], "-w") == 0 ||
+                strcmp(argv[argc], "--window") == 0) {
+            printf("* Enable window\n");
+            fullscreen = 0;
+        } else {
+            Usage(argv[0]);
+        }
+    }
 
+    if (fullscreen)
+        win_flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-	/* Init SDL Audio: */
-	if (use_sound == 1)
-	{
-		if (SDL_Init(SDL_INIT_AUDIO) < 0)
-		{
-			fprintf(stderr,
-				"\nWarning: I could not initialize audio!\n"
-				"The Simple DirectMedia error that occured was:\n"
-				"%s\n\n", SDL_GetError());
-			use_sound = 0;
-		}
-	}
+    screen = (SdlScreen_t*)malloc(sizeof(SdlScreen_t));
+    if (!screen) {
+        fprintf(stderr, "Failed to allocate screen\n");
+        exit(1);
+    }
 
-	/* Open sound: */
-#ifndef NOSOUND
-	
-	if (use_sound == 1)
-	{
-		if (Mix_OpenAudio(22050, AUDIO_S16, 2, 512) < 0)
-		{
-			fprintf(stderr,
-				"\nWarning: I could not set up audio for 22050 Hz "
-				"16-bit stereo.\n"
-				"The Simple DirectMedia error that occured was:\n"
-				"%s\n\n", SDL_GetError());
-			use_sound = 0;
-		}
-		SetSoundVolume(sound_volume);
-	}
-#endif
+    /* Window is 1.5× the logical game size; renderer scales to fill it */
+    screen->window = SDL_CreateWindow("SdlZombies",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        MAXX * 3 / 2, MAXY * 3 / 2, win_flags);
+    if (!screen->window) {
+        fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
+        free(screen);
+        exit(2);
+    }
 
-	/* Random initialization (annexe) */
-	InitRandom();
+    screen->renderer = SDL_CreateRenderer(screen->window, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (!screen->renderer) {
+        /* Fall back to software renderer */
+        screen->renderer = SDL_CreateRenderer(screen->window, -1, 0);
+    }
+    if (!screen->renderer) {
+        fprintf(stderr, "Couldn't create renderer: %s\n", SDL_GetError());
+        SDL_DestroyWindow(screen->window);
+        free(screen);
+        exit(2);
+    }
 
-	return( screen );
-}
+    /* All game logic targets MAXX×MAXY; renderer scales to the larger window */
+    SDL_RenderSetLogicalSize(screen->renderer, MAXX, MAXY);
 
+    /* Virtual 640x480 drawing surface — all game blits go here */
+    screen->vscreen = SDL_CreateRGBSurface(0, MAXX, MAXY, 32,
+        0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    if (!screen->vscreen) {
+        fprintf(stderr, "Couldn't create vscreen: %s\n", SDL_GetError());
+        SDL_DestroyRenderer(screen->renderer);
+        SDL_DestroyWindow(screen->window);
+        free(screen);
+        exit(2);
+    }
 
-void Sdl_Close(SDL_Surface * screen)
-{
-	SDL_FreeSurface(screen);
+    screen->width  = MAXX;
+    screen->height = MAXY;
+
+    SDL_SetRenderDrawColor(screen->renderer, 0, 0, 0, 255);
+    SDL_RenderClear(screen->renderer);
+    SDL_RenderPresent(screen->renderer);
 
 #ifndef NOSOUND
-	Mix_CloseAudio();
+    if (Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 4096) < 0)
+        fprintf(stderr, "Warning: couldn't open audio: %s\n", SDL_GetError());
 #endif
 
-	SDL_Quit();
+    return screen;
 }
 
 
-void Sdl_SwapFullScreen(SDL_Surface ** screen)
+void Sdl_Close(SdlScreen_t *screen)
 {
-	videoflags ^= SDL_FULLSCREEN;
+    if (screen) {
+        if (screen->vscreen)
+            SDL_FreeSurface(screen->vscreen);
+        SDL_DestroyRenderer(screen->renderer);
+        SDL_DestroyWindow(screen->window);
+        free(screen);
+    }
 
-	SDL_FreeSurface( * screen );
-	
-	/* Set MAXXxMAXY (640x480) video mode */
-	if ( (* screen=SDL_SetVideoMode(MAXX,MAXY,video_bpp,videoflags)) == NULL ) 
-	{
-		fprintf(stderr, "Couldn't set %dx%d video mode: %s\n", 
-			MAXX, MAXY, SDL_GetError());
-		exit(2);
-	}
+#ifndef NOSOUND
+    Mix_CloseAudio();
+#endif
+
+    SDL_Quit();
+}
+
+
+/* Upload vscreen to renderer and present — replaces SDL_Flip */
+void Sdl_Flip(SdlScreen_t *screen)
+{
+    SDL_Texture *tex;
+
+    tex = SDL_CreateTextureFromSurface(screen->renderer, screen->vscreen);
+    if (tex) {
+        SDL_RenderCopy(screen->renderer, tex, NULL, NULL);
+        SDL_RenderPresent(screen->renderer);
+        SDL_DestroyTexture(tex);
+    }
+}
+
+
+void Sdl_SwapFullScreen(SdlScreen_t *screen)
+{
+    fullscreen = !fullscreen;
+    SDL_SetWindowFullscreen(screen->window,
+        fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 }
 
 
 void Sdl_WaitNoEvent(void)
 {
-	SDL_Event event;
-	int done;
+    SDL_Event event;
+    int done;
 
-	do {
-		done = 0;
-	
-		while ( SDL_PollEvent( &event ) )
-		{
-			switch( event.type )
-			{
-				case SDL_KEYDOWN : done = 1; break;	
-
-				case SDL_MOUSEBUTTONDOWN : done = 1; break;
-			}
-		}
-	} while(done == 1);
+    do {
+        done = 0;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_KEYDOWN:         done = 1; break;
+                case SDL_MOUSEBUTTONDOWN: done = 1; break;
+            }
+        }
+    } while (done == 1);
 }
 
 
 int Sdl_Pause(void)
 {
-	int done = SDL_EVT_NULL;
-	SDL_Event event;
+    int done = SDL_EVT_NULL;
+    SDL_Event event;
 
-	while(done == SDL_EVT_NULL)
-	{
-		while ( SDL_PollEvent( &event ) )
-		{
-			switch( event.type )
-			{
-				case SDL_QUIT : done = SDL_EVT_EXIT; break;
+    while (done == SDL_EVT_NULL) {
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    done = SDL_EVT_EXIT;
+                    break;
+                case SDL_KEYDOWN:
+                    if (Sdl_HandleGlobalKey(screen, &event.key)) break;
+                    done = SDL_EVT_VALID;
+                    if (event.key.keysym.sym == key_quit)
+                        done = SDL_EVT_QUIT;
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    done = SDL_EVT_VALID;
+                    break;
+            }
+        }
+        SDL_Delay(10);
+    }
 
-				case SDL_KEYDOWN : done = SDL_EVT_VALID;
-					if (event.key.keysym.sym == key_quit) done = SDL_EVT_QUIT;
-				break;
-
-				case SDL_MOUSEBUTTONUP : done = SDL_EVT_VALID; break;
-			}
-		}
-	}
-
-	return done;
+    return done;
 }
 
 
-
-void Sdl_PutPixel(SDL_Surface *screen, int x, int y, 
-		Uint8 red, Uint8 green, Uint8 blue)
+/* Draw a single pixel onto vscreen */
+void Sdl_PutPixel(SdlScreen_t *screen, int x, int y,
+        Uint8 red, Uint8 green, Uint8 blue)
 {
-	Uint32   pixel;
-	Uint8   *bits, bpp;
-	
-	pixel = SDL_MapRGB(screen->format, 0xFF, 0xFF, 0x00);
-	
-	if ( SDL_MUSTLOCK(screen) ) {
-		if ( SDL_LockSurface(screen) < 0 )
-			return;
-	}
-	
-	bpp = screen->format->BytesPerPixel;
-	bits = ((Uint8 *)screen->pixels)+y*screen->pitch+x*bpp;
-	
-	/* Set the pixel */
-	switch(bpp) {
-		case 1:
-			*((Uint8 *)(bits)) = (Uint8)pixel;
-		break;
-		case 2:
-			*((Uint16 *)(bits)) = (Uint16)pixel;
-		break;
-		case 3: { /* Format/endian independent */
-			Uint8 r, g, b;
-			r = (pixel>>screen->format->Rshift)&0xFF;
-			g = (pixel>>screen->format->Gshift)&0xFF;
-			b = (pixel>>screen->format->Bshift)&0xFF;
-			*((bits)+screen->format->Rshift/8) = r; 
-			*((bits)+screen->format->Gshift/8) = g;
-			*((bits)+screen->format->Bshift/8) = b;
-		}
-		break;
-		case 4:
-			*((Uint32 *)(bits)) = (Uint32)pixel;
-		break;
-	}
-	
-	/* Update the display */
-	if ( SDL_MUSTLOCK(screen) ) {
-		SDL_UnlockSurface(screen);
-	}
-	SDL_UpdateRect(screen, x, y, 1, 1);
+    SDL_Rect rect = { x, y, 1, 1 };
+    SDL_FillRect(screen->vscreen, &rect,
+        SDL_MapRGB(screen->vscreen->format, red, green, blue));
 }
 
 
-
-
-
-
-void Sdl_PutSurface(SDL_Surface * screen, int x, int y, SDL_Surface * source)
+/* Blit source surface onto vscreen at (x, y) */
+void Sdl_PutSurface(SdlScreen_t *screen, int x, int y,
+        SDL_Surface *source)
 {
-	SDL_Rect dstrect;
-	
-	dstrect.x = x; dstrect.y = y;
-	dstrect.w = source->w; dstrect.h = source->h;
-	SDL_BlitSurface(source, NULL, screen, &dstrect);
+    SDL_Rect dstrect = { x, y, source->w, source->h };
+    SDL_BlitSurface(source, NULL, screen->vscreen, &dstrect);
 }
 
 
-
-int Sdl_XYOnRect(int x, int y, SDL_Rect * rect)
+int Sdl_XYOnRect(int x, int y, SDL_Rect *rect)
 {
-	if (x >= rect->x && y >= rect->y &&
-		x <= rect->x + rect->w && y <= rect->y + rect->h) return 1;
-
-	return 0;
+    if (x >= rect->x && y >= rect->y &&
+            x <= rect->x + rect->w && y <= rect->y + rect->h)
+        return 1;
+    return 0;
 }
 
+
+int Sdl_HandleGlobalKey(SdlScreen_t *screen, SDL_KeyboardEvent *key)
+{
+    if (key->keysym.sym == SDLK_RETURN && (key->keysym.mod & KMOD_ALT)) {
+        Sdl_SwapFullScreen(screen);
+        return 1;
+    }
+    return 0;
+}
+
+
+void Sdl_WarpMouse(SdlScreen_t *screen, int x, int y)
+{
+    int win_w, win_h;
+    SDL_GetWindowSize(screen->window, &win_w, &win_h);
+    SDL_WarpMouseInWindow(screen->window,
+        x * win_w / screen->width,
+        y * win_h / screen->height);
+}
 
 
 void ComplainAndExit(char *msg)
 {
-	fprintf(stderr, "Error : %s\n", msg);
-
-	exit( 1 );
+    fprintf(stderr, "Error: %s\n", msg);
+    exit(1);
 }
 
 
 void InitRandom(void)
 {
-	time_t curtime;
-	int i;
-	
-	time( &curtime );
-	srand( (unsigned int) curtime );
-	
-	for(i = 0; i < Random(0, 1000); i++)
-		Random(0, 1000);
+    int i;
+
+    srand((unsigned int)SDL_GetTicks());
+
+    for (i = 0; i < Random(0, 1000); i++)
+        Random(0, 1000);
 }
 
 int Random(int rmin, int rmax)
 {
-	return rmin + (int) (1.0*(rmax-rmin+1) * rand()/(RAND_MAX+1.0) );
+    return rmin + (int)(1.0 * (rmax - rmin + 1) * rand() / (RAND_MAX + 1.0));
 }

@@ -198,11 +198,11 @@ int ShowOptions(Option_t *opt,	SDL_Rect * coord_rect,
 
 	PlaySound(SND_INTRO);
 
-	SDL_BlitSurface(background, coord_rect, screen, NULL);
+	SDL_BlitSurface(background, coord_rect, screen->vscreen, NULL);
 
 	DrawScreenOption(opt);
 	
-	SDL_Flip(screen);
+	Sdl_Flip(screen);
 
 	done = Sdl_Pause();
 
@@ -295,7 +295,7 @@ static int DrawMenuOption(Option_t * opt_beg, Option_t * opt_end, int sel)
 	Sdl_DrawTextNumberSmall( (MAXX - strlen(str)*16)/2, 60+num*30, str,
 		sel == num ? 1 : 0);
 		
-	SDL_Flip(screen);
+	Sdl_Flip(screen);
 
 	return num;
 }
@@ -377,34 +377,42 @@ static int ValidMenuOption(Option_t * opt_beg, Option_t * opt_end, int sel)
 						& opt_end->lim_scroll_y,0, MAXY - 10) == SDL_EVT_EXIT)
 					done = SDL_EVT_EXIT;
 		break;
-		case 9 : if (Sdl_GetNumber("Start show time",
-						& opt_beg->time_show,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-				if (Sdl_GetNumber("End show time",
-						& opt_end->time_show,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-		break;
-		case 10 : if (Sdl_GetNumber("Start interval time",
-						& opt_beg->time_inter,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-				if (Sdl_GetNumber("End interval time",
-						& opt_end->time_inter,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-		break;
-		case 11 : if (Sdl_GetNumber("Start start time",
-						& opt_beg->time_start,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-				if (Sdl_GetNumber("End start time",
-						& opt_end->time_start,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-		break;
-		case 12 : if (Sdl_GetNumber("Start speed game",
-						& opt_beg->game_speed,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-				if (Sdl_GetNumber("End speed game",
-						& opt_end->game_speed,0, 100000) == SDL_EVT_EXIT)
-					done = SDL_EVT_EXIT;
-		break;
+		case 9 : {
+			int tmp;
+			tmp = (int)opt_beg->time_show;
+			if (Sdl_GetNumber("Start show time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_beg->time_show = (Uint32)tmp;
+			tmp = (int)opt_end->time_show;
+			if (Sdl_GetNumber("End show time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_end->time_show = (Uint32)tmp;
+		} break;
+		case 10 : {
+			int tmp;
+			tmp = (int)opt_beg->time_inter;
+			if (Sdl_GetNumber("Start interval time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_beg->time_inter = (Uint32)tmp;
+			tmp = (int)opt_end->time_inter;
+			if (Sdl_GetNumber("End interval time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_end->time_inter = (Uint32)tmp;
+		} break;
+		case 11 : {
+			int tmp;
+			tmp = (int)opt_beg->time_start;
+			if (Sdl_GetNumber("Start start time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_beg->time_start = (Uint32)tmp;
+			tmp = (int)opt_end->time_start;
+			if (Sdl_GetNumber("End start time", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_end->time_start = (Uint32)tmp;
+		} break;
+		case 12 : {
+			int tmp;
+			tmp = (int)opt_beg->game_speed;
+			if (Sdl_GetNumber("Start speed game", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_beg->game_speed = (Uint32)tmp;
+			tmp = (int)opt_end->game_speed;
+			if (Sdl_GetNumber("End speed game", &tmp, 0, 100000) == SDL_EVT_EXIT) done = SDL_EVT_EXIT;
+			opt_end->game_speed = (Uint32)tmp;
+		} break;
 	
 		case 13 : done = SDL_EVT_VALID;
 	}
@@ -438,13 +446,13 @@ int MenuSetOptions(Option_t * opt_beg, Option_t * opt_end)
 					}
 
 					if (event.key.keysym.sym == SDLK_DOWN ||
-						event.key.keysym.sym == SDLK_KP2) {
+						event.key.keysym.sym == SDLK_KP_2) {
 						PlaySound(SND_MENU);
 						cur += 1; if (cur == 4) cur += 1;
 						if (cur > nb_option) cur = 0;
 					}
 					if (event.key.keysym.sym == SDLK_UP ||
-						event.key.keysym.sym == SDLK_KP8) {
+						event.key.keysym.sym == SDLK_KP_8) {
 						PlaySound(SND_MENU);
 						cur -= 1; if (cur == 4) cur -= 1;
 						if (cur < 0) cur = nb_option;

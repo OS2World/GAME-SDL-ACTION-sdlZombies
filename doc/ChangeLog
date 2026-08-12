@@ -1,3 +1,15 @@
+Version 1.0.0 Release 3 (ArcaOS SDL2 port):
+	Port SDL1 → SDL2 using GCC 9.2 / EMX on ArcaOS.
+	Add : SDL2 renderer with 960×720 window and SDL_RenderSetLogicalSize
+	        for hardware-scaled 640×480 logical resolution.
+	Add : SDL2_mixer support (sound enabled by default).
+	Add : Alt+Enter global fullscreen toggle (works in all screens).
+	Fix : background tile correctly fills full virtual screen.
+	Fix : mouse warp coordinates scaled to physical window size.
+	Fix : shadow errno.h to resolve include-guard conflict with OS/2 headers.
+	Fix : MY_TOUPPER macro replaces toupper() to avoid __ctype linker error.
+	Build: makefile.os2 + compile.cmd for ArcaOS GCC 9.2 toolchain.
+
 Version 1.0.0 :
 	Final version !
 

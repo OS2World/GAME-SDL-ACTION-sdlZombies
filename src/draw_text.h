@@ -19,7 +19,7 @@
 #define __DRAW_TEXT_H
 
 
-#include <SDL.h>
+#include "sdl_util.h"
 
 extern void Sdl_DrawText(int x, int y, char * str); 
 extern void Sdl_DrawNumber(int x, int y, int v);

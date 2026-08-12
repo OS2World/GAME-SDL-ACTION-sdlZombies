@@ -18,9 +18,12 @@
 #include "sdl_util.h"
 #include "draw_text.h"
 #include "global.h"
-#include "ctype.h"
 #include <stdlib.h>
 #include <string.h>
+
+/* Avoid ctype.h's MY_TOUPPER() macro which pulls in __ctype[] (unresolved
+   under WLINK on OS/2).  ASCII-only uppercase is all the game needs. */
+#define MY_TOUPPER(c) ((c) >= 'a' && (c) <= 'z' ? (c) - 32 : (c))
 
 
 /* Draw text: */
@@ -32,15 +35,15 @@ void Sdl_DrawText(int x, int y, char * str)
  
 	for (i = 0; i < strlen(str); i++)
 	{
-		if (toupper(str[i]) >= 'A' && toupper(str[i]) <= 'Z')
+		if (MY_TOUPPER(str[i]) >= 'A' && MY_TOUPPER(str[i]) <= 'Z')
 		{
-			src.x = (toupper(str[i]) - 'A') * 32; src.y = 0;
+			src.x = (MY_TOUPPER(str[i]) - 'A') * 32; src.y = 0;
 			src.w = 32; src.h = 32;
 
 			dest.x = x + (i * 32); dest.y = y;
 			dest.w = 32; dest.h = 32;
 
-			SDL_BlitSurface(images[IMG_LETTER], &src, screen, &dest);
+			SDL_BlitSurface(images[IMG_LETTER], &src, screen->vscreen, &dest);
 		}
 	}
 }
@@ -65,7 +68,7 @@ void Sdl_DrawNumber(int x, int y, int v)
 		dest.x = x + (i * 32); dest.y = y;
 		dest.w = 32; dest.h = 32;
 
-		SDL_BlitSurface(images[IMG_NUMBER_0], &src, screen, &dest);
+		SDL_BlitSurface(images[IMG_NUMBER_0], &src, screen->vscreen, &dest);
 	}
 }
 
@@ -76,15 +79,15 @@ void Sdl_DrawTextNumber(int x, int y, char *str)
  
 	for (i = 0; i < strlen(str); i++)
 	{
-		if (toupper(str[i]) >= 'A' && toupper(str[i]) <= 'Z')
+		if (MY_TOUPPER(str[i]) >= 'A' && MY_TOUPPER(str[i]) <= 'Z')
 		{
-			src.x = (toupper(str[i]) - 'A') * 32; src.y = 0;
+			src.x = (MY_TOUPPER(str[i]) - 'A') * 32; src.y = 0;
 			src.w = 32; src.h = 32;
 
 			dest.x = x + (i * 32); dest.y = y;
 			dest.w = 32; dest.h = 32;
 
-			SDL_BlitSurface(images[IMG_LETTER], &src, screen, &dest);
+			SDL_BlitSurface(images[IMG_LETTER], &src, screen->vscreen, &dest);
 		}
 
 		if (str[i] >= '0' && str[i] <= '9')
@@ -95,7 +98,7 @@ void Sdl_DrawTextNumber(int x, int y, char *str)
 			dest.x = x + (i * 32); dest.y = y;
 			dest.w = 32; dest.h = 32;
 
-			SDL_BlitSurface(images[IMG_NUMBER_0], &src, screen, &dest);
+			SDL_BlitSurface(images[IMG_NUMBER_0], &src, screen->vscreen, &dest);
 		}
 	}
 }
@@ -118,15 +121,15 @@ void Sdl_DrawTextNumberSmall(int x, int y, char *str, int font)
  
 	for (i = 0; i < strlen(str); i++)
 	{
-		if (toupper(str[i]) >= 'A' && toupper(str[i]) <= 'Z')
+		if (MY_TOUPPER(str[i]) >= 'A' && MY_TOUPPER(str[i]) <= 'Z')
 		{
-			src.x = (toupper(str[i]) - 'A') * 16; src.y = 0;
+			src.x = (MY_TOUPPER(str[i]) - 'A') * 16; src.y = 0;
 			src.w = 16; src.h = 16;
 
 			dest.x = x + (i * 16); dest.y = y;
 			dest.w = 16; dest.h = 16;
 
-			SDL_BlitSurface(img_letter, &src, screen, &dest);
+			SDL_BlitSurface(img_letter, &src, screen->vscreen, &dest);
 		}
 
 		if (str[i] >= '0' && str[i] <= '9')
@@ -137,7 +140,7 @@ void Sdl_DrawTextNumberSmall(int x, int y, char *str, int font)
 			dest.x = x + (i * 16); dest.y = y;
 			dest.w = 16; dest.h = 16;
 
-			SDL_BlitSurface(img_number, &src, screen, &dest);
+			SDL_BlitSurface(img_number, &src, screen->vscreen, &dest);
 		}
 	}
 }
@@ -159,7 +162,7 @@ static void DrawGetString(char * msg, char * str)
 	Sdl_DrawTextNumberSmall( (MAXX - strlen(str)*16) / 2,
 		MAXY/2 + 5, str, 0);
 
-	SDL_Flip(screen);
+	Sdl_Flip(screen);
 }
 
 int Sdl_GetString(char * msg, char * str, int maxchar, int enbl_letter)
@@ -201,12 +204,12 @@ int Sdl_GetString(char * msg, char * str, int maxchar, int enbl_letter)
 						strbis[ strlen(strbis) - 1 ] = event.key.keysym.sym;
 						strcat(strbis, "i");
 					}
-					if (event.key.keysym.sym >= SDLK_KP0 &&
-						event.key.keysym.sym <= SDLK_KP9 &&
+					if (event.key.keysym.sym >= SDLK_KP_0 &&
+						event.key.keysym.sym <= SDLK_KP_9 &&
 						strlen(strbis) < maxchar)
 					{
-						strbis[ strlen(strbis) - 1 ] = '0' + 
-							event.key.keysym.sym - SDLK_KP0;
+						strbis[ strlen(strbis) - 1 ] = '0' +
+							event.key.keysym.sym - SDLK_KP_0;
 						strcat(strbis, "i");
 					}
 					if (event.key.keysym.sym == SDLK_SPACE &&
@@ -247,12 +250,11 @@ int Sdl_GetNumber(char * msg, int * val, int min, int max)
 {
 	char str[255];
 
-	sprintf(str, "%d", *val); 
+	sprintf(str, "%d", *val);
 
 	Sdl_GetString(msg, str, 254, 0);
 
 	*val = atoi(str);
-
 	if (*val < min) *val = min;
 	if (*val > max) *val = max;
 

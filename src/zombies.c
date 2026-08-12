@@ -139,7 +139,7 @@ void PutZombies(Zombies_t * zomb)
 	drect.y = zomb->y - tb.h / 2 - zomb->coord_rect->y;
 	drect.w = tb.w; drect.h = tb.h;
 
-	SDL_BlitSurface(img, & tb, screen, & drect);
+	SDL_BlitSurface(img, &tb, screen->vscreen, &drect);
 }
 
 void MoveZombies(Zombies_t * zomb)

@@ -104,7 +104,8 @@ int RunLevel(Option_t * opt)
 	switch(use_keyboard)
 	{
 		case 0 : SDL_ShowCursor(1);
-			SDL_WarpMouse(penguin.x - coord_rect.x, penguin.y - coord_rect.y);
+			Sdl_WarpMouse(screen,
+				penguin.x - coord_rect.x, penguin.y - coord_rect.y);
 		break;
 		case 1 : SDL_ShowCursor(0); break;
 	}
@@ -128,8 +129,9 @@ int RunLevel(Option_t * opt)
 			SDL_Delay(700);
 			SetCoordPenguin_ZombiesHole(&penguin, zombies, opt->nb_zombies, 
 				hole, opt->nb_hole);
-			if (use_keyboard == 0) SDL_WarpMouse(penguin.x - coord_rect.x, 
-										penguin.y - coord_rect.y);
+			if (use_keyboard == 0) Sdl_WarpMouse(screen,
+									penguin.x - coord_rect.x,
+									penguin.y - coord_rect.y);
 			opt->status.nb_life -= 1;
 			if (opt->status.nb_life <= 0) done = SDL_EVT_VALID;
 		}
@@ -145,8 +147,9 @@ int RunLevel(Option_t * opt)
 			SDL_Delay(950);
 			SetCoordPenguin_ZombiesHole(&penguin, zombies, opt->nb_zombies, 
 				hole, opt->nb_hole);
-			if (use_keyboard == 0) SDL_WarpMouse(penguin.x - coord_rect.x, 
-										penguin.y - coord_rect.y);
+			if (use_keyboard == 0) Sdl_WarpMouse(screen,
+									penguin.x - coord_rect.x,
+									penguin.y - coord_rect.y);
 			opt->status.nb_life -= 1;
 			if (opt->status.nb_life <= 0) done = SDL_EVT_VALID;
 		}	
@@ -179,15 +182,17 @@ static SDL_Surface * InitBackground(int bgnd_w, int bgnd_h)
 	SDL_Surface * background;
 	SDL_Surface * img;
 
-	background = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_SRCCOLORKEY,
-		bgnd_w, bgnd_h, screen->format->BitsPerPixel, 0,0,0,0);
+	background = SDL_CreateRGBSurface(0,
+		bgnd_w, bgnd_h, screen->vscreen->format->BitsPerPixel, 0,0,0,0);
 	if (background == NULL) ComplainAndExit("Allocation Background");
 
 	img = images[ Random(IMG_BACK_1, IMG_BACK_10) ];
 
 	for(i = 0; i <= bgnd_w; i+= img->w)
-	for(j = 0; j <= bgnd_h; j+= img->h)
-		Sdl_PutSurface(background, i, j, img);
+	for(j = 0; j <= bgnd_h; j+= img->h) {
+		SDL_Rect drect = { i, j, img->w, img->h };
+		SDL_BlitSurface(img, NULL, background, &drect);
+	}
 
 	return background;
 }
@@ -268,7 +273,8 @@ static int AnalyseMainEvent(SDL_Rect * coord_rect, Penguin_t * penguin,
 				if (use_keyboard == 1)
 				{
 					use_keyboard = 0; SDL_ShowCursor(1);
-					SDL_WarpMouse(penguin->x - coord_rect->x, 
+					Sdl_WarpMouse(screen,
+						penguin->x - coord_rect->x,
 						penguin->y - coord_rect->y);
 				}
 			break;
@@ -279,19 +285,21 @@ static int AnalyseMainEvent(SDL_Rect * coord_rect, Penguin_t * penguin,
 			break;
 
 			case SDL_KEYDOWN :
+				if (Sdl_HandleGlobalKey(screen, &event.key)) break;
 				if (event.key.keysym.sym == key_quit) done = SDL_EVT_QUIT;
 				if (event.key.keysym.sym == SDLK_k) {
 					switch(use_keyboard)
 					{
 						case 0 : use_keyboard = 1; SDL_ShowCursor(0); break;
 						case 1 : use_keyboard = 0; SDL_ShowCursor(1);
-							SDL_WarpMouse(penguin->x - coord_rect->x, 
+							Sdl_WarpMouse(screen,
+								penguin->x - coord_rect->x,
 								penguin->y - coord_rect->y);
 						break;
 					}
 				}
 				if (event.key.keysym.sym == SDLK_m ||
-					event.key.keysym.sym == SDLK_KP5 ||
+					event.key.keysym.sym == SDLK_KP_5 ||
 					event.key.keysym.sym == SDLK_RCTRL ||
 					event.key.keysym.sym == SDLK_LCTRL) 
 				{ 
@@ -313,10 +321,10 @@ static int AnalyseMainEvent(SDL_Rect * coord_rect, Penguin_t * penguin,
 						event.key.keysym.sym == SDLK_UP || 
 						event.key.keysym.sym == SDLK_RIGHT || 
 						event.key.keysym.sym == SDLK_LEFT ||
-						event.key.keysym.sym == SDLK_KP6 || 
-						event.key.keysym.sym == SDLK_KP4 || 
-						event.key.keysym.sym == SDLK_KP2 || 
-						event.key.keysym.sym == SDLK_KP8)
+						event.key.keysym.sym == SDLK_KP_6 ||
+						event.key.keysym.sym == SDLK_KP_4 ||
+						event.key.keysym.sym == SDLK_KP_2 ||
+						event.key.keysym.sym == SDLK_KP_8)
 				{
 					use_keyboard = 1; SDL_ShowCursor(0);
 				}
@@ -324,7 +332,7 @@ static int AnalyseMainEvent(SDL_Rect * coord_rect, Penguin_t * penguin,
 				if (event.key.keysym.sym == SDLK_f)
 				{
 					fullscreen = 1 - fullscreen;
-					Sdl_SwapFullScreen(&screen);
+					Sdl_SwapFullScreen(screen);
 				}
 
 				if (event.key.keysym.sym == SDLK_p ||
@@ -343,22 +351,22 @@ static int AnalyseMainEvent(SDL_Rect * coord_rect, Penguin_t * penguin,
 
 static void AnalyseKeyBoard(Penguin_t *penguin)
 {
-	Uint8 * keystate;
-	
-	keystate = SDL_GetKeyState(NULL);
+	const Uint8 *keystate;
+
+	keystate = SDL_GetKeyboardState(NULL);
 
 	penguin->dx = 0; penguin->dy = 0; penguin->mv = 0;
-	if (keystate[SDLK_RIGHT] || keystate[SDLK_KP6]) { 
-		penguin->dx = 1; penguin->mv = 1; 
+	if (keystate[SDL_SCANCODE_RIGHT] || keystate[SDL_SCANCODE_KP_6]) {
+		penguin->dx = 1; penguin->mv = 1;
 	}
-	if (keystate[SDLK_LEFT] || keystate[SDLK_KP4]) { 
-		penguin->dx = -1; penguin->mv = 1; 
+	if (keystate[SDL_SCANCODE_LEFT] || keystate[SDL_SCANCODE_KP_4]) {
+		penguin->dx = -1; penguin->mv = 1;
 	}
-	if (keystate[SDLK_UP] || keystate[SDLK_KP8]) { 
-		penguin->dy=-1; penguin->mv = 1; 
+	if (keystate[SDL_SCANCODE_UP] || keystate[SDL_SCANCODE_KP_8]) {
+		penguin->dy = -1; penguin->mv = 1;
 	}
-	if (keystate[SDLK_DOWN] || keystate[SDLK_KP2]) { 
-		penguin->dy=1; penguin->mv = 1; 
+	if (keystate[SDL_SCANCODE_DOWN] || keystate[SDL_SCANCODE_KP_2]) {
+		penguin->dy = 1; penguin->mv = 1;
 	}
 		
 	MovePenguin(penguin);
@@ -530,7 +538,7 @@ static void DrawScreen(SDL_Surface *background, SDL_Rect * coord_rect,
 {
 	int i;
 
-	SDL_BlitSurface(background, coord_rect, screen, NULL);
+	SDL_BlitSurface(background, coord_rect, screen->vscreen, NULL);
 	
 	if (use_map == 2) 
 		PutMap(coord_rect, penguin, zombies, nb_zombies,
@@ -551,5 +559,5 @@ static void DrawScreen(SDL_Surface *background, SDL_Rect * coord_rect,
 		PutMap(coord_rect, penguin, zombies, nb_zombies,
 			hole, nb_hole, IMG_MAP_2);
 
-	SDL_Flip(screen);
+	Sdl_Flip(screen);
 }

@@ -21,7 +21,6 @@
 #include "../config.h"
 #endif
 
-#include <SDL.h>
 #include <stdio.h>
 #include "sdl_util.h"
 #include "global.h"
@@ -48,7 +47,7 @@ int main(int argc, char **argv)
 
 	screen = Sdl_Init(argc, argv);
 
-	SDL_WM_SetCaption("SdlZombies", "SdlZombies");
+	SDL_SetWindowTitle(screen->window, "SdlZombies");
 
 	InitGlobalVar();
 

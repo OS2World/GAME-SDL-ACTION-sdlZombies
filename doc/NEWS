@@ -1,0 +1,6 @@
+Version 1.0.0 Release 3 (2026)
+  SDL2 port for ArcaOS / OS/2.
+  Sound enabled via SDL2_mixer.
+  960x720 window with hardware scaling.
+  Alt+Enter fullscreen toggle.
+  Build with compile.cmd using GCC 9.2.

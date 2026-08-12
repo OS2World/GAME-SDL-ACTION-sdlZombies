@@ -17,7 +17,6 @@
 
 #include "f_option.h"
 #include "global.h"
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include "sdl_util.h"

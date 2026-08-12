@@ -116,18 +116,18 @@ void SetCoordPenguin(Penguin_t * peng)
 	peng->x = Random(0, peng->coord_rect->w);
 	peng->y = Random(0, peng->coord_rect->h);
 
-	peng->coord_rect->x = peng->x - screen->w / 2;
-	peng->coord_rect->y = peng->y - screen->h / 2;
+	peng->coord_rect->x = peng->x - screen->width / 2;
+	peng->coord_rect->y = peng->y - screen->height / 2;
 
 	if (peng->coord_rect->x < 0) peng->coord_rect->x = 0;
 	
-	if (peng->coord_rect->x + screen->w > peng->coord_rect->w)
-		peng->coord_rect->x = peng->coord_rect->w - screen->w;
+	if (peng->coord_rect->x + screen->width > peng->coord_rect->w)
+		peng->coord_rect->x = peng->coord_rect->w - screen->width;
 		
 	if (peng->coord_rect->y < 0) peng->coord_rect->y = 0;
 	
-	if (peng->coord_rect->y + screen->h > peng->coord_rect->h)
-		peng->coord_rect->y = peng->coord_rect->h - screen->h;
+	if (peng->coord_rect->y + screen->height > peng->coord_rect->h)
+		peng->coord_rect->y = peng->coord_rect->h - screen->height;
 }
 
 
@@ -141,7 +141,7 @@ void PutPenguin(Penguin_t * peng)
 	drect.y = peng->y - tb.h / 2 - peng->coord_rect->y;
 	drect.w = tb.w; drect.h = tb.h;
 
-	SDL_BlitSurface(img, & tb, screen, & drect);
+	SDL_BlitSurface(img, &tb, screen->vscreen, &drect);
 }
 
 void MovePenguin(Penguin_t * peng)
@@ -156,10 +156,10 @@ void MovePenguin(Penguin_t * peng)
 
 		if (peng->x > peng->coord_rect->w) peng->x = peng->coord_rect->w;
 
-		if (peng->x - peng->coord_rect->x > screen->w - peng->lim_scroll_x) {
+		if (peng->x - peng->coord_rect->x > screen->width - peng->lim_scroll_x) {
 			peng->coord_rect->x += peng->speed;
-			if (peng->coord_rect->x > peng->coord_rect->w - screen->w)
-				peng->coord_rect->x = peng->coord_rect->w - screen->w;
+			if (peng->coord_rect->x > peng->coord_rect->w - screen->width)
+				peng->coord_rect->x = peng->coord_rect->w - screen->width;
 		}
 	}
 
@@ -193,10 +193,10 @@ void MovePenguin(Penguin_t * peng)
 
 		if (peng->y > peng->coord_rect->h) peng->y = peng->coord_rect->h;
 
-		if (peng->y - peng->coord_rect->y > screen->h - peng->lim_scroll_y) {
+		if (peng->y - peng->coord_rect->y > screen->height - peng->lim_scroll_y) {
 			peng->coord_rect->y += peng->speed;
-			if (peng->coord_rect->y > peng->coord_rect->h - screen->h)
-				peng->coord_rect->y = peng->coord_rect->h - screen->h;
+			if (peng->coord_rect->y > peng->coord_rect->h - screen->height)
+				peng->coord_rect->y = peng->coord_rect->h - screen->height;
 		}
 	}
 

@@ -79,10 +79,10 @@ void SetMenuItem(Menu_t * menu, int num, SDL_Surface * pimage,
 	if (menu->item[num].background != NULL)
 		SDL_FreeSurface(menu->item[num].background);
 
-	menu->item[num].background = 
-		SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_SRCCOLORKEY,
-			pimage->w, pimage->h, menu->screen->format->BitsPerPixel, 
-			0,0,0,0);
+	menu->item[num].background =
+		SDL_CreateRGBSurface(0,
+			pimage->w, pimage->h, menu->screen->format->BitsPerPixel,
+			0, 0, 0, 0);
 	if (menu->item[num].background == NULL) 
 		ComplainAndExit("Allocation Background for Item");
 }
@@ -92,21 +92,19 @@ void SetMenuItem(Menu_t * menu, int num, SDL_Surface * pimage,
 static void DeSelectMenuItem(Menu_t * menu, int num)
 {
 	SDL_BlitSurface(menu->item[num].background, NULL,
-		menu->screen, & menu->item[num].pos);
-	SDL_BlitSurface(menu->item[num].image, NULL, 
-		menu->screen, & menu->item[num].pos);
-		
-	SDL_UpdateRects(menu->screen, 1, & menu->item[num].pos);
+		menu->screen, &menu->item[num].pos);
+	SDL_BlitSurface(menu->item[num].image, NULL,
+		menu->screen, &menu->item[num].pos);
+	Sdl_Flip(screen);
 }
 
 static void SelectMenuItem(Menu_t * menu, int num)
 {
 	SDL_BlitSurface(menu->item[num].background, NULL,
-		menu->screen, & menu->item[num].pos);
-	SDL_BlitSurface(menu->item[num].image_select, NULL, 
-		menu->screen, & menu->item[num].pos);
-		
-	SDL_UpdateRects(menu->screen, 1, & menu->item[num].pos);
+		menu->screen, &menu->item[num].pos);
+	SDL_BlitSurface(menu->item[num].image_select, NULL,
+		menu->screen, &menu->item[num].pos);
+	Sdl_Flip(screen);
 }
 
 
@@ -143,7 +141,15 @@ int ActiveMenu(Menu_t * menu)
 	SDL_Event event;
 	int i;
 
-	SDL_BlitSurface(menu->image_back, NULL, menu->screen, NULL);
+	/* Tile the background image across the entire virtual screen */
+	{
+		int tx, ty;
+		for (ty = 0; ty < menu->screen->h; ty += menu->image_back->h)
+			for (tx = 0; tx < menu->screen->w; tx += menu->image_back->w) {
+				SDL_Rect dst = { tx, ty, menu->image_back->w, menu->image_back->h };
+				SDL_BlitSurface(menu->image_back, NULL, menu->screen, &dst);
+			}
+	}
 
 	for(i = 0; i < menu->nb_item; i++)
 	{
@@ -156,7 +162,7 @@ int ActiveMenu(Menu_t * menu)
 					menu->screen, & menu->item[i].pos);
 	}
 		
-	SDL_Flip( menu->screen );
+	Sdl_Flip(screen);
 
 	menu->type_valid = MENU_NONE;
 
@@ -184,16 +190,17 @@ int ActiveMenu(Menu_t * menu)
 				break;
 
 				case SDL_KEYDOWN :
+					if (Sdl_HandleGlobalKey(screen, &event.key)) break;
 					if (event.key.keysym.sym == key_quit) {
 						done = SDL_EVT_QUIT;
 						PlaySound(SND_MENU_VAL);
 					}
 
 					if (event.key.keysym.sym == SDLK_DOWN ||
-						event.key.keysym.sym == SDLK_KP2) 
-						IncrCurSelMenu(menu); 
+						event.key.keysym.sym == SDLK_KP_2)
+						IncrCurSelMenu(menu);
 					if (event.key.keysym.sym == SDLK_UP ||
-						event.key.keysym.sym == SDLK_KP8) 
+						event.key.keysym.sym == SDLK_KP_8) 
 						DecrCurSelMenu(menu); 
 
 					if (event.key.keysym.sym == SDLK_RETURN ||

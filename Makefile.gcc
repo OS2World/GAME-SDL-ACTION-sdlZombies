@@ -1,0 +1,58 @@
+# Makefile.gcc -- SdlZombies for ArcaOS/OS2 with GCC 9.2+ (SDL2)
+
+SHELL  = sh
+CC     = gcc
+
+# Compiler flags - optimized for OS/2, minimal warnings for legacy code
+# Neutralize OS/2 memory-model keywords by redefining them as empty
+CFLAGS = -O2 \
+         -Wall \
+         -Wno-implicit-function-declaration \
+         -Wno-implicit-int \
+         -DSDL_MAIN_HANDLED \
+         -include src/os2_compat.h \
+         -I/src \
+         -I/@unixroot/usr/include \
+         -I/@unixroot/usr/include/SDL2
+
+# Linker flags - OMF format, high memory, map file
+LDFLAGS = -Zomf -Zhigh-mem -Zmap
+
+# Libraries - direct DLL imports (ArcaOS RPM layout)
+LIBS = /@unixroot/usr/lib/SDL2_dll.a \
+       /@unixroot/usr/lib/SDL2_image_dll.a \
+       /@unixroot/usr/lib/SDL2_mixer_dll.a \
+       /@unixroot/usr/lib/SDL2_ttf_dll.a \
+       -lm
+
+TARGET = sdlzombies.exe
+
+# Source files - what actually implements the game logic
+SRCS = src/main.c src/game.c src/global.c src/game_logic.c
+
+# Object files with .obj extension (OS/2 convention)
+OBJS = $(SRCS:.c=.obj)
+
+# Default target
+all: $(TARGET)
+
+# Link executable
+$(TARGET): $(OBJS)
+	@echo "Linking $(TARGET)..."
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+# Compile pattern rule - .c to .obj
+%.obj: %.c
+	@echo "Compiling $<..."
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Clean
+clean:
+	-rm -f $(OBJS) $(TARGET) *.map src/*.obj
+
+# Install to system directory
+install: $(TARGET)
+	@echo "Installing to @unixroot/usr/local/bin..."
+	copy $(TARGET) @unixroot\usr\local\bin\$(TARGET)
+
+.PHONY: all clean install

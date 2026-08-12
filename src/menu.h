@@ -18,7 +18,7 @@
 #ifndef __MENU_H
 #define __MENU_H
 
-#include <SDL.h>
+#include "sdl_util.h"
 
 typedef enum { MENU_NONE, MENU_KEYBOARD, MENU_MOUSE } MenuValid_t;
 
