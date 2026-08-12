@@ -117,3 +117,4 @@ game directory. To reset all options to their defaults, delete this file.
 ## Links
 
 - Original game page: http://hocwp.free.fr/sdlzombies.html
+- ArcaOS Port: https://github.com/OS2World/GAME-SDL-ACTION-sdlZombies
