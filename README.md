@@ -5,6 +5,8 @@ It starts simple, but the zombies gradually move faster and harder to outmaneuve
 
 The game is based on a very old game that ran on the ZX81 (Sinclair).
 
+![SdlZombies ScreenShot](/doc/sdlzombies.png)
+
 ---
 
 ## Version
